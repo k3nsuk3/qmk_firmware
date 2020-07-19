@@ -16,14 +16,6 @@ enum custom_keycodes {
 
 #define EISU LALT(KC_GRV)
 
-enum user_macro {
-    UM_EMHL,
-    UM_KHKR
-};
-
-#define M_EMHL MACROTAP(UM_EMHL)
-#define M_KHKR MACROTAP(UM_KHKR)
-
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     /* Qwerty
@@ -44,7 +36,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     LGUI(KC_R),  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_UP,                        KC_DOWN , KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_GRV, \
     KC_TAB,  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_PGDN ,                        KC_PGUP, KC_H,    KC_J,    KC_K,    KC_L,  KC_SCLN  ,  KC_QUOT, \
     KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_LALT ,                        KC_DEL , KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_LBRC , KC_RBRC, \
-    KC_F7, LSFT(SGUI(KC_4)), G(C(KC_Q)), KC_ESC,            M_EMHL,   KC_LGUI ,KC_LCTL,         KC_BSPC,KC_ENT , M_KHKR,            KC_SPC, KC_SLSH, KC_MINS, KC_EQL  \
+    KC_F7, LSFT(SGUI(KC_4)), G(C(KC_Q)), KC_ESC,            LOWER,   KC_LGUI ,KC_LCTL,         KC_BSPC,KC_ENT , RAISE,            KC_SPC, KC_SLSH, KC_MINS, KC_EQL  \
   ),
 
   /* Lower
@@ -65,7 +57,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     LGUI(KC_R), KC_EXLM, KC_KP_PLUS,   KC_KP_1, KC_KP_2,  KC_KP_3, KC_LBRC,                        KC_RBRC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_GRV, \
     KC_TAB,  KC_CIRC,    KC_KP_MINUS,    KC_KP_4,    KC_KP_5,    KC_KP_6,    KC_PGDN ,                        KC_PGUP, KC_LEFT,    KC_DOWN,    KC_UP,    KC_RGHT, KC_SCLN , KC_QUOT, \
     KC_LSFT, KC_PERC,    KC_KP_ASTERISK,    KC_KP_7,    KC_KP_8,    KC_KP_9,    KC_LALT ,                        KC_DEL , KC_N,    KC_M,    KC_COMM,   KC_DOT,  KC_LBRC, KC_RBRC, \
-    KC_F7, LSFT(SGUI(KC_4)), KC_KP_SLASH, KC_KP_0,             M_EMHL,   KC_LGUI , KC_LCTL,         KC_BSPC,KC_ENT , M_KHKR,            KC_SPC, KC_SLSH, KC_MINS, KC_EQL    \
+    KC_F7, LSFT(SGUI(KC_4)), KC_KP_SLASH, KC_KP_0,             LOWER,   KC_LGUI , KC_LCTL,         KC_BSPC,KC_ENT , RAISE,            KC_SPC, KC_SLSH, KC_MINS, KC_EQL    \
   ),
 
 
@@ -88,7 +80,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     LGUI(KC_R), KC_EXLM, KC_KP_PLUS,   KC_KP_1, KC_KP_2,  KC_KP_3, KC_LBRC,                        KC_RBRC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, KC_GRV, \
     KC_TAB,  KC_CIRC,    KC_KP_MINUS,    KC_KP_4,    KC_KP_5,    KC_KP_6,    KC_PGDN ,                        KC_PGUP, KC_LEFT,    KC_DOWN,    KC_UP,    KC_RGHT,  KC_SCLN, KC_QUOT, \
     KC_LSFT, KC_PERC,    KC_KP_ASTERISK,    KC_KP_7,    KC_KP_8,    KC_KP_9,    KC_LALT ,                        KC_DEL , KC_N,    KC_M,    KC_COMM,   KC_DOT,  KC_LBRC, KC_RBRC, \
-    KC_F7, LSFT(SGUI(KC_4)), KC_KP_SLASH, KC_KP_0,             M_EMHL,   KC_LGUI , KC_LCTL,         KC_BSPC,KC_ENT , M_KHKR,            KC_SPC, KC_SLSH, KC_MINS, KC_EQL   \
+    KC_F7, LSFT(SGUI(KC_4)), KC_KP_SLASH, KC_KP_0,             LOWER,   KC_LGUI , KC_LCTL,         KC_BSPC,KC_ENT , RAISE,            KC_SPC, KC_SLSH, KC_MINS, KC_EQL   \
   ),
 
   /* Adjust
@@ -122,53 +114,72 @@ void persistent_default_layer_set(uint16_t default_layer) {
   default_layer_set(default_layer);
 }
 
+static bool lower_pressed = false;
+static bool raise_pressed = false;
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
     case QWERTY:
       if (record->event.pressed) {
          print("mode just switched to qwerty and this is a huge string\n");
+         lower_pressed = false;
+         raise_pressed = false;
         set_single_persistent_default_layer(_QWERTY);
       }
       return false;
       break;
     case LOWER:
       if (record->event.pressed) {
+        lower_pressed = true;
+        raise_pressed = false;
         layer_on(_LOWER);
         update_tri_layer(_LOWER, _RAISE, _ADJUST);
       } else {
         layer_off(_LOWER);
         update_tri_layer(_LOWER, _RAISE, _ADJUST);
+
+        if (lower_pressed) {
+            register_code(KC_LANG2);
+            unregister_code(KC_LANG2);
+        }
+        lower_pressed = false;
       }
       return false;
       break;
     case RAISE:
       if (record->event.pressed) {
+        raise_pressed = true;
+        lower_pressed = false;
         layer_on(_RAISE);
         update_tri_layer(_LOWER, _RAISE, _ADJUST);
       } else {
         layer_off(_RAISE);
         update_tri_layer(_LOWER, _RAISE, _ADJUST);
+
+        if (raise_pressed) {
+            register_code(KC_LANG1);
+            unregister_code(KC_LANG1);
+        }
+        raise_pressed = false;
       }
       return false;
       break;
     case ADJUST:
       if (record->event.pressed) {
+        lower_pressed = false;
+        raise_pressed = false;
         layer_on(_ADJUST);
       } else {
         layer_off(_ADJUST);
       }
       return false;
       break;
+    default:
+        if (record->event.pressed) {
+            lower_pressed = false;
+            raise_pressed = false;
+        }
+        break;
   }
   return true;
-}
-
-const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt) {
-    switch (id) {
-        case UM_EMHL:
-            return MACRO_TAP_HOLD_LAYER(record, MACRO(T(MHEN), T(LANG2), END), _LOWER);
-        case UM_KHKR:
-            return MACRO_TAP_HOLD_LAYER(record, MACRO(T(HENK), T(LANG1), END), _RAISE);
-    };
-    return MACRO_NONE;
 }
